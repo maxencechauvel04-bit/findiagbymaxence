@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinDiag — Diagnostic Financier PME</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: #2a2a3a;
+    --accent: #c8a96e;
+    --accent2: #4ecdc4;
+    --danger: #ff6b6b;
+    --warn: #ffd93d;
+    --ok: #6bcb77;
+    --text: #e8e8f0;
+    --muted: #888899;
+    --font-display: 'Playfair Display', serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(200,169,110,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,169,110,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-size: 13px;
+    letter-spacing: 6px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 900;
+    line-height: 1.05;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.1s forwards;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    font-size: 15px;
+    color: var(--muted);
+    margin-top: 12px;
+    font-weight: 300;
+    letter-spacing: 0.3px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.2s forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Steps */
+  .steps-indicator {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.3s forwards;
+  }
+
+  .step-dot {
+    width: 40px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    transition: background 0.4s ease, width 0.4s ease;
+  }
+
+  .step-dot.active { background: var(--accent); }
+  .step-dot.done { background: var(--accent2); }
+
+  /* Form sections */
+  .form-section {
+    display: none;
+    opacity: 0;
+    transform: translateX(30px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+
+  .form-section.active {
+    display: block;
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 32px;
+  }
+
+  /* Input grid */
+  .input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+
+  @media (max-width: 600px) { .input-grid { grid-template-columns: 1fr; } }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .input-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+  }
+
+  .input-wrap {
+    position: relative;
+  }
+
+  .input-wrap .unit {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--accent);
+    pointer-events: none;
+  }
+
+  input[type="number"], input[type="text"], select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 44px 14px 16px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -moz-appearance: textfield;
+  }
+
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(200,169,110,0.12);
+  }
+
+  select { padding-right: 16px; cursor: pointer; appearance: none; }
+
+  .help-text {
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0.7;
+  }
+
+  /* Buttons */
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 8px;
+  }
+
+  .btn {
+    padding: 14px 32px;
+    border-radius: 6px;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0a0a0f;
+    font-weight: 700;
+  }
+
+  .btn-primary:hover { background: #d9bb82; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(200,169,110,0.3); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover { border-color: var(--muted); color: var(--text); }
+
+  /* Results */
+  #results { display: none; }
+
+  .score-hero {
+    display: flex;
+    align-items: center;
+    gap: 48px;
+    padding: 48px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeUp 0.5s ease 0.1s forwards;
+  }
+
+  @media (max-width: 600px) { .score-hero { flex-direction: column; gap: 24px; padding: 28px; } }
+
+  .score-circle {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    flex-shrink: 0;
+  }
+
+  .score-circle svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .score-circle .bg-ring {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 8;
+  }
+
+  .score-circle .fill-ring {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    stroke-dasharray: 376;
+    stroke-dashoffset: 376;
+  }
+
+  .score-number {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 900;
+  }
+
+  .score-number span {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .score-verdict { flex: 1; }
+
+  .verdict-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .verdict-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+
+  .verdict-desc {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* KPI cards */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  @media (max-width: 700px) { .kpi-grid { grid-template-columns: 1fr; } }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 20px;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: border-color 0.3s;
+  }
+
+  .kpi-card:hover { border-color: var(--accent); }
+
+  .kpi-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .kpi-value {
+    font-family: var(--font-display);
+    font-size: 30px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .kpi-bench {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    margin-top: 8px;
+  }
+
+  .badge-ok { background: rgba(107,203,119,0.15); color: var(--ok); }
+  .badge-warn { background: rgba(255,217,61,0.15); color: var(--warn); }
+  .badge-bad { background: rgba(255,107,107,0.15); color: var(--danger); }
+
+  /* Recommendations */
+  .reco-section {
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeUp 0.5s ease 0.4s forwards;
+  }
+
+  .reco-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .reco-header h3 {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .reco-count {
+    background: var(--accent);
+    color: #0a0a0f;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .reco-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .reco-item.priority-high { border-left-color: var(--danger); }
+  .reco-item.priority-mid { border-left-color: var(--warn); }
+  .reco-item.priority-low { border-left-color: var(--ok); }
+
+  .reco-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+
+  .reco-content h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .reco-content p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Ratios table */
+  .ratios-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 40px;
+    opacity: 0;
+    animation: fadeUp 0.5s ease 0.5s forwards;
+  }
+
+  .ratios-table th {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    text-align: left;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ratios-table td {
+    padding: 14px 16px;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(42,42,58,0.5);
+    vertical-align: middle;
+  }
+
+  .ratios-table tr:last-child td { border-bottom: none; }
+
+  .ratio-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ratio-bar-bg {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .ratio-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+    width: 0;
+  }
+
+  /* Footer */
+  .footer-note {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 32px 0 48px;
+    border-top: 1px solid var(--border);
+    margin-top: 16px;
+    line-height: 1.6;
+    opacity: 0;
+    animation: fadeUp 0.5s ease 0.7s forwards;
+  }
+
+  .footer-note strong { color: var(--accent); }
+
+  .restart-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 10px 24px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .restart-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Divider */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 40px 0;
+  }
+
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">FinDiag · v1.0</div>
+    <h1>Diagnostic<br><span>Financier PME</span></h1>
+    <p class="subtitle">Analysez la santé financière de votre entreprise en 3 minutes — ratios clés, alertes & recommandations stratégiques.</p>
+  </header>
+
+  <!-- FORM -->
+  <div id="form-container">
+    <div class="steps-indicator">
+      <div class="step-dot active" id="dot-0"></div>
+      <div class="step-dot" id="dot-1"></div>
+      <div class="step-dot" id="dot-2"></div>
+    </div>
+
+    <!-- STEP 1 : Compte de résultat -->
+    <div class="form-section active" id="step-0">
+      <div class="section-label">Étape 1 / 3</div>
+      <div class="section-title">Compte de résultat</div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label>Chiffre d'affaires (CA)</label>
+          <div class="input-wrap"><input type="number" id="ca" placeholder="1 000 000"><span class="unit">€</span></div>
+          <span class="help-text">Revenus totaux de l'exercice</span>
+        </div>
+        <div class="input-group">
+          <label>Coût des ventes / Achats</label>
+          <div class="input-wrap"><input type="number" id="cogs" placeholder="400 000"><span class="unit">€</span></div>
+        </div>
+        <div class="input-group">
+          <label>Charges d'exploitation</label>
+          <div class="input-wrap"><input type="number" id="opex" placeholder="300 000"><span class="unit">€</span></div>
+          <span class="help-text">Salaires, loyers, charges fixes</span>
+        </div>
+        <div class="input-group">
+          <label>Charges financières</label>
+          <div class="input-wrap"><input type="number" id="interest" placeholder="30 000"><span class="unit">€</span></div>
+          <span class="help-text">Intérêts sur emprunts</span>
+        </div>
+        <div class="input-group">
+          <label>Dotations aux amortissements</label>
+          <div class="input-wrap"><input type="number" id="amort" placeholder="50 000"><span class="unit">€</span></div>
+        </div>
+        <div class="input-group">
+          <label>Impôts sur les bénéfices</label>
+          <div class="input-wrap"><input type="number" id="tax" placeholder="50 000"><span class="unit">€</span></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="goStep(1)">Continuer →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2 : Bilan -->
+    <div class="form-section" id="step-1">
+      <div class="section-label">Étape 2 / 3</div>
+      <div class="section-title">Bilan comptable</div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label>Actifs courants</label>
+          <div class="input-wrap"><input type="number" id="current-assets" placeholder="350 000"><span class="unit">€</span></div>
+          <span class="help-text">Trésorerie, stocks, créances clients</span>
+        </div>
+        <div class="input-group">
+          <label>dont Trésorerie</label>
+          <div class="input-wrap"><input type="number" id="cash" placeholder="80 000"><span class="unit">€</span></div>
+        </div>
+        <div class="input-group">
+          <label>Actifs non courants</label>
+          <div class="input-wrap"><input type="number" id="fixed-assets" placeholder="600 000"><span class="unit">€</span></div>
+          <span class="help-text">Immobilisations, brevets, équipements</span>
+        </div>
+        <div class="input-group">
+          <label>Capitaux propres</label>
+          <div class="input-wrap"><input type="number" id="equity" placeholder="400 000"><span class="unit">€</span></div>
+        </div>
+        <div class="input-group">
+          <label>Dettes financières (LT)</label>
+          <div class="input-wrap"><input type="number" id="lt-debt" placeholder="300 000"><span class="unit">€</span></div>
+          <span class="help-text">Emprunts bancaires long terme</span>
+        </div>
+        <div class="input-group">
+          <label>Passifs courants</label>
+          <div class="input-wrap"><input type="number" id="current-liab" placeholder="250 000"><span class="unit">€</span></div>
+          <span class="help-text">Dettes fournisseurs, CT</span>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goStep(0)">← Retour</button>
+        <button class="btn btn-primary" onclick="goStep(2)">Continuer →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3 : Contexte -->
+    <div class="form-section" id="step-2">
+      <div class="section-label">Étape 3 / 3</div>
+      <div class="section-title">Contexte de l'entreprise</div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label>Secteur d'activité</label>
+          <div class="input-wrap">
+            <select id="sector">
+              <option value="commerce">Commerce / Distribution</option>
+              <option value="industrie">Industrie / Manufacture</option>
+              <option value="services">Services aux entreprises</option>
+              <option value="tech">Tech / Numérique</option>
+              <option value="construction">BTP / Construction</option>
+              <option value="sante">Santé / Médical</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Taille de l'entreprise</label>
+          <div class="input-wrap">
+            <select id="size">
+              <option value="micro">Micro-entreprise (< 10 salariés)</option>
+              <option value="petite">Petite (10–50 salariés)</option>
+              <option value="moyenne">Moyenne (50–250 salariés)</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-group full">
+          <label>Nom de l'entreprise (optionnel)</label>
+          <div class="input-wrap"><input type="text" id="company-name" placeholder="ex. Acme SAS" style="padding-right: 16px;"></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="goStep(1)">← Retour</button>
+        <button class="btn btn-primary" onclick="runDiagnosis()">🔍 Lancer le diagnostic</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+    <div class="score-hero" id="score-hero">
+      <div class="score-circle">
+        <svg viewBox="0 0 140 140">
+          <circle class="bg-ring" cx="70" cy="70" r="60"/>
+          <circle class="fill-ring" id="score-ring" cx="70" cy="70" r="60"/>
+        </svg>
+        <div class="score-number" id="score-number">
+          <div id="score-val">—</div>
+          <span>/ 100</span>
+        </div>
+      </div>
+      <div class="score-verdict">
+        <div class="verdict-label">Diagnostic global</div>
+        <div class="verdict-title" id="verdict-title">—</div>
+        <div class="verdict-desc" id="verdict-desc">—</div>
+      </div>
+    </div>
+
+    <div class="kpi-grid" id="kpi-grid"></div>
+
+    <div class="section-divider"></div>
+
+    <div class="reco-section">
+      <div class="reco-header">
+        <h3>Recommandations stratégiques</h3>
+        <div class="reco-count" id="reco-count">0</div>
+      </div>
+      <div id="reco-list"></div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <table class="ratios-table">
+      <thead>
+        <tr>
+          <th>Ratio financier</th>
+          <th>Valeur</th>
+          <th>Norme secteur</th>
+          <th style="width:160px">Niveau</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody id="ratios-tbody"></tbody>
+    </table>
+
+    <div class="footer-note">
+      Outil développé par <strong>Maxence Chauvel</strong> — Candidat Master Finance, Monnaie, Banque, Finance & Assurance.<br>
+      Les ratios utilisés suivent les normes de l'<strong>Autorité des Normes Comptables (ANC)</strong> et les références Banque de France.<br>
+      Ce simulateur est à visée pédagogique et ne remplace pas un audit financier professionnel.
+      <br><br>
+      <button class="restart-btn" onclick="restart()">↺ Nouveau diagnostic</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let currentStep = 0;
+
+  function goStep(n) {
+    document.getElementById(`step-${currentStep}`).classList.remove('active');
+    document.getElementById(`dot-${currentStep}`).classList.remove('active');
+    document.getElementById(`dot-${currentStep}`).classList.add('done');
+    currentStep = n;
+    const section = document.getElementById(`step-${n}`);
+    section.style.display = 'block';
+    requestAnimationFrame(() => {
+      section.classList.add('active');
+    });
+    document.getElementById(`dot-${n}`).classList.remove('done');
+    document.getElementById(`dot-${n}`).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function v(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+  function runDiagnosis() {
+    const ca = v('ca'), cogs = v('cogs'), opex = v('opex');
+    const interest = v('interest'), amort = v('amort'), tax = v('tax');
+    const currentAssets = v('current-assets'), cash = v('cash');
+    const fixedAssets = v('fixed-assets'), equity = v('equity');
+    const ltDebt = v('lt-debt'), currentLiab = v('current-liab');
+
+    // Valeurs de fallback si champs vides
+    const safeCA = ca || 1000000;
+    const safeEquity = equity || 400000;
+    const safeCurrentAssets = currentAssets || 350000;
+    const safeCurrentLiab = currentLiab || 250000;
+
+    const ebitda = safeCA - cogs - opex;
+    const ebit = ebitda - amort;
+    const netIncome = ebit - interest - tax;
+    const totalDebt = ltDebt + safeCurrentLiab;
+    const totalAssets = safeCurrentAssets + fixedAssets;
+
+    // Ratios
+    const grossMargin = safeCA > 0 ? ((safeCA - cogs) / safeCA) * 100 : 0;
+    const ebitdaMargin = safeCA > 0 ? (ebitda / safeCA) * 100 : 0;
+    const netMargin = safeCA > 0 ? (netIncome / safeCA) * 100 : 0;
+    const currentRatio = safeCurrentLiab > 0 ? safeCurrentAssets / safeCurrentLiab : 0;
+    const quickRatio = safeCurrentLiab > 0 ? (safeCurrentAssets - (safeCurrentAssets * 0.3)) / safeCurrentLiab : 0;
+    const debtToEquity = safeEquity > 0 ? ltDebt / safeEquity : 0;
+    const debtToEbitda = ebitda > 0 ? (ltDebt / ebitda) : 0;
+    const roe = safeEquity > 0 ? (netIncome / safeEquity) * 100 : 0;
+    const roa = totalAssets > 0 ? (netIncome / totalAssets) * 100 : 0;
+    const interestCoverage = interest > 0 ? ebit / interest : 99;
+
+    // Scoring
+    let score = 50;
+    const issues = [], strengths = [];
+
+    // Marge brute
+    if (grossMargin >= 40) { score += 8; strengths.push('marge_brute'); }
+    else if (grossMargin >= 20) { score += 4; }
+    else { score -= 8; issues.push('marge_brute'); }
+
+    // EBITDA
+    if (ebitdaMargin >= 15) { score += 8; strengths.push('ebitda'); }
+    else if (ebitdaMargin >= 5) { score += 3; }
+    else { score -= 10; issues.push('ebitda'); }
+
+    // Liquidité
+    if (currentRatio >= 2) { score += 8; strengths.push('liquidite'); }
+    else if (currentRatio >= 1.2) { score += 4; }
+    else { score -= 12; issues.push('liquidite'); }
+
+    // Levier
+    if (debtToEquity <= 0.5) { score += 6; strengths.push('levier'); }
+    else if (debtToEquity <= 1.5) { score += 2; }
+    else { score -= 8; issues.push('levier'); }
+
+    // Coverage
+    if (interestCoverage >= 5) { score += 6; strengths.push('coverage'); }
+    else if (interestCoverage >= 2) { score += 2; }
+    else { score -= 10; issues.push('coverage'); }
+
+    // ROE
+    if (roe >= 15) { score += 6; strengths.push('roe'); }
+    else if (roe >= 5) { score += 2; }
+    else { score -= 4; issues.push('roe'); }
+
+    score = Math.max(0, Math.min(100, Math.round(score)));
+
+    // Verdict
+    let verdictTitle, verdictDesc, verdictColor;
+    if (score >= 75) {
+      verdictTitle = "Situation saine & performante";
+      verdictDesc = "Les fondamentaux de l'entreprise sont solides. La structure financière offre une bonne résilience face aux chocs économiques et un potentiel de développement.";
+      verdictColor = "#6bcb77";
+    } else if (score >= 50) {
+      verdictTitle = "Situation correcte, vigilance recommandée";
+      verdictDesc = "La structure financière est acceptable mais présente des points de fragilité. Des actions ciblées permettraient de renforcer la solidité de l'entreprise.";
+      verdictColor = "#ffd93d";
+    } else {
+      verdictTitle = "Situation fragile — Action requise";
+      verdictDesc = "Plusieurs indicateurs sont en-dessous des seuils de prudence. Une restructuration financière ou un accompagnement professionnel est à envisager.";
+      verdictColor = "#ff6b6b";
+    }
+
+    // Show results
+    document.getElementById('form-container').style.display = 'none';
+    document.getElementById('results').style.display = 'block';
+
+    // Score circle
+    const circ = 2 * Math.PI * 60;
+    const offset = circ - (score / 100) * circ;
+    const ring = document.getElementById('score-ring');
+    ring.style.stroke = verdictColor;
+    ring.style.strokeDasharray = circ;
+    ring.style.strokeDashoffset = circ;
+    setTimeout(() => { ring.style.strokeDashoffset = offset; }, 200);
+
+    document.getElementById('score-val').textContent = score;
+    document.getElementById('score-val').style.color = verdictColor;
+    document.getElementById('verdict-title').textContent = verdictTitle;
+    document.getElementById('verdict-title').style.color = verdictColor;
+    document.getElementById('verdict-desc').textContent = verdictDesc;
+
+    // KPIs
+    const company = document.getElementById('company-name').value || 'Votre entreprise';
+    const kpiData = [
+      { label: 'EBITDA', value: fmt(ebitda), bench: `Marge : ${ebitdaMargin.toFixed(1)}%`, status: ebitdaMargin >= 15 ? 'ok' : ebitdaMargin >= 5 ? 'warn' : 'bad' },
+      { label: 'Résultat net', value: fmt(netIncome), bench: `Marge nette : ${netMargin.toFixed(1)}%`, status: netIncome >= 0 ? (netMargin >= 5 ? 'ok' : 'warn') : 'bad' },
+      { label: 'Ratio de liquidité', value: currentRatio.toFixed(2), bench: 'Norme : ≥ 1.5', status: currentRatio >= 1.5 ? 'ok' : currentRatio >= 1 ? 'warn' : 'bad' },
+      { label: 'Levier Dettes/CP', value: debtToEquity.toFixed(2), bench: 'Norme : ≤ 1.5', status: debtToEquity <= 1 ? 'ok' : debtToEquity <= 1.5 ? 'warn' : 'bad' },
+      { label: 'ROE', value: `${roe.toFixed(1)}%`, bench: 'Norme : ≥ 10%', status: roe >= 10 ? 'ok' : roe >= 5 ? 'warn' : 'bad' },
+      { label: 'Couverture intérêts', value: interest > 0 ? interestCoverage.toFixed(1) + 'x' : 'N/A', bench: 'Norme : ≥ 3x', status: interestCoverage >= 3 ? 'ok' : interestCoverage >= 1.5 ? 'warn' : 'bad' },
+    ];
+
+    const kpiGrid = document.getElementById('kpi-grid');
+    kpiGrid.innerHTML = '';
+    kpiData.forEach((k, i) => {
+      const card = document.createElement('div');
+      card.className = 'kpi-card';
+      const labels = { ok: '✓ Bon niveau', warn: '⚠ À surveiller', bad: '✗ Critique' };
+      card.innerHTML = `
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value" style="color:${k.status==='ok'?'var(--ok)':k.status==='warn'?'var(--warn)':'var(--danger)'}">${k.value}</div>
+        <div class="kpi-bench">${k.bench}</div>
+        <div class="badge badge-${k.status}">${labels[k.status]}</div>
+      `;
+      kpiGrid.appendChild(card);
+      setTimeout(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+        card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+      }, 300 + i * 80);
+    });
+
+    // Recommendations
+    const recos = [];
+    if (issues.includes('liquidite')) recos.push({ priority: 'high', icon: '🚨', title: 'Renforcer la liquidité à court terme', desc: 'Votre ratio de liquidité est inférieur à 1 : les dettes court terme excèdent vos actifs courants. Priorité à la réduction du BFR (délais clients, stocks) et à l\'obtention d\'une ligne de crédit revolving.' });
+    if (issues.includes('ebitda')) recos.push({ priority: 'high', icon: '📉', title: 'Améliorer la profitabilité opérationnelle', desc: 'L\'EBITDA est insuffisant. Analysez poste par poste vos charges d\'exploitation : une réduction de 5% des charges fixes peut transformer significativement la rentabilité.' });
+    if (issues.includes('levier')) recos.push({ priority: 'mid', icon: '⚖️', title: 'Réduire le levier financier', desc: 'Le ratio Dettes/Capitaux Propres dépasse 1.5x. Envisagez une augmentation de capital ou la conversion de dettes en quasi-fonds propres (OCA, prêts participatifs).' });
+    if (issues.includes('coverage')) recos.push({ priority: 'high', icon: '💸', title: 'Risque de solvabilité sur les intérêts', desc: 'L\'EBIT ne couvre pas suffisamment les charges financières. Renégociez les conditions de votre dette bancaire ou envisagez un refinancement à taux fixe.' });
+    if (issues.includes('marge_brute')) recos.push({ priority: 'mid', icon: '🏷️', title: 'Revoir la politique de prix / sourcing', desc: 'La marge brute est faible. Analysez la pertinence d\'une hausse tarifaire, d\'une optimisation achats ou d\'un repositionnement de gamme.' });
+    if (issues.includes('roe')) recos.push({ priority: 'low', icon: '📊', title: 'Optimiser le rendement des capitaux propres', desc: 'Le ROE est inférieur au coût des fonds propres estimé. Priorisez les investissements à fort ROCE et envisagez une politique de distribution calibrée.' });
+
+    if (strengths.includes('liquidite') && strengths.includes('levier')) recos.push({ priority: 'low', icon: '🚀', title: 'Capacité d\'investissement ou d\'acquisition', desc: 'Votre bilan est solide. La structure financière actuelle permet d\'envisager une croissance externe ou un LBO partiel pour accélérer le développement.' });
+    if (strengths.includes('ebitda') && strengths.includes('coverage')) recos.push({ priority: 'low', icon: '🏦', title: 'Levier bancaire optimisable', desc: 'La génération de cash-flow est robuste. Vous pouvez envisager un financement bancaire supplémentaire pour financer capex ou croissance sans dégrader votre rating.' });
+
+    document.getElementById('reco-count').textContent = recos.length;
+    const recoList = document.getElementById('reco-list');
+    recoList.innerHTML = '';
+    recos.forEach(r => {
+      const el = document.createElement('div');
+      el.className = `reco-item priority-${r.priority}`;
+      el.innerHTML = `<div class="reco-icon">${r.icon}</div><div class="reco-content"><h4>${r.title}</h4><p>${r.desc}</p></div>`;
+      recoList.appendChild(el);
+    });
+
+    // Ratios table
+    const ratiosData = [
+      { name: 'Marge brute', val: `${grossMargin.toFixed(1)}%`, norm: '≥ 30%', pct: Math.min(grossMargin / 60, 1), status: grossMargin >= 30 ? 'ok' : grossMargin >= 15 ? 'warn' : 'bad' },
+      { name: 'Marge EBITDA', val: `${ebitdaMargin.toFixed(1)}%`, norm: '≥ 10%', pct: Math.min(ebitdaMargin / 25, 1), status: ebitdaMargin >= 10 ? 'ok' : ebitdaMargin >= 5 ? 'warn' : 'bad' },
+      { name: 'Marge nette', val: `${netMargin.toFixed(1)}%`, norm: '≥ 5%', pct: Math.min(Math.max(netMargin, 0) / 15, 1), status: netMargin >= 5 ? 'ok' : netMargin >= 2 ? 'warn' : 'bad' },
+      { name: 'Ratio courant', val: currentRatio.toFixed(2), norm: '≥ 1.5', pct: Math.min(currentRatio / 3, 1), status: currentRatio >= 1.5 ? 'ok' : currentRatio >= 1 ? 'warn' : 'bad' },
+      { name: 'Ratio rapide (Quick)', val: quickRatio.toFixed(2), norm: '≥ 1.0', pct: Math.min(quickRatio / 2, 1), status: quickRatio >= 1 ? 'ok' : quickRatio >= 0.7 ? 'warn' : 'bad' },
+      { name: 'Dettes / EBITDA', val: ebitda > 0 ? debtToEbitda.toFixed(1) + 'x' : 'N/A', norm: '≤ 3x', pct: ebitda > 0 ? Math.max(0, 1 - debtToEbitda / 6) : 0.5, status: debtToEbitda <= 3 ? 'ok' : debtToEbitda <= 5 ? 'warn' : 'bad' },
+      { name: 'ROA', val: `${roa.toFixed(1)}%`, norm: '≥ 5%', pct: Math.min(Math.max(roa, 0) / 15, 1), status: roa >= 5 ? 'ok' : roa >= 2 ? 'warn' : 'bad' },
+    ];
+
+    const tbody = document.getElementById('ratios-tbody');
+    tbody.innerHTML = '';
+    ratiosData.forEach(r => {
+      const colors = { ok: 'var(--ok)', warn: 'var(--warn)', bad: 'var(--danger)' };
+      const icons = { ok: '✓', warn: '⚠', bad: '✗' };
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight:500">${r.name}</td>
+        <td style="font-family:var(--font-mono);color:${colors[r.status]}">${r.val}</td>
+        <td style="font-family:var(--font-mono);color:var(--muted);font-size:12px">${r.norm}</td>
+        <td><div class="ratio-bar-wrap"><div class="ratio-bar-bg"><div class="ratio-bar-fill" data-pct="${r.pct}" style="background:${colors[r.status]}"></div></div></div></td>
+        <td><span class="badge badge-${r.status}" style="font-size:10px">${icons[r.status]}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Animate bars
+    setTimeout(() => {
+      document.querySelectorAll('.ratio-bar-fill').forEach(bar => {
+        bar.style.width = (bar.dataset.pct * 100) + '%';
+      });
+    }, 600);
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function fmt(n) {
+    if (Math.abs(n) >= 1000000) return (n / 1000000).toFixed(2) + ' M€';
+    if (Math.abs(n) >= 1000) return (n / 1000).toFixed(1) + ' k€';
+    return n.toFixed(0) + ' €';
+  }
+
+  function restart() {
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('form-container').style.display = 'block';
+    // Reset
+    document.querySelectorAll('input[type="number"], input[type="text"]').forEach(i => i.value = '');
+    for (let i = 0; i < 3; i++) {
+      document.getElementById(`dot-${i}`).classList.remove('active', 'done');
+      document.getElementById(`step-${i}`).classList.remove('active');
+    }
+    currentStep = 0;
+    document.getElementById('step-0').classList.add('active');
+    document.getElementById('dot-0').classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
